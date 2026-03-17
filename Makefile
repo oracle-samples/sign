@@ -1,4 +1,5 @@
-BUILDDIR=sign-0.4
+VERSION := $(shell awk '/^Version:/ { print $$2; exit }' sign.spec)
+BUILDDIR := sign-$(VERSION)
 
 all: el8 el9
 
