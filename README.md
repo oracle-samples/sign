@@ -68,8 +68,10 @@ $ sign destroy-setup
 
     Unenroll all keys and remove them from the machine. Afterwards you must
     reboot and unenroll them through the MokManager. When rebooting, shim
-    will load the MokManager and ask for a password. The password is the
-    same as root. Console access is required for this step.
+    will load the MokManager and ask for a password. If root has a usable
+    password set, sign reuses it. Otherwise mokutil prompts for a
+    MokManager password while creating the request. Console access is
+    required for this step.
 
 ##### ima \<filename\>
 
@@ -79,11 +81,12 @@ $ sign destroy-setup
 
     Create all the keys. Afterwards you must reboot and enroll them through
     the MokManager. When rebooting, shim will load the MokManager and ask
-    for a password. The password is the same as root. Console access is
-    required for this step. If you are using UEK-NEXT kernels, the \"Oracle
-    Linux Test Certificate\" will also be enrolled with this step. Only call
-    this once. If you need to start over issue the destroy-setup command
-    first.
+    for a password. If root has a usable password set, sign reuses it.
+    Otherwise mokutil prompts for a MokManager password while creating the
+    request. Console access is required for this step. If you are using
+    UEK-NEXT kernels, the \"Oracle Linux Test Certificate\" will also be
+    enrolled with this step. Only call this once. If you need to start over
+    issue the destroy-setup command first.
 
 ##### kernel \<kernel name\>
 

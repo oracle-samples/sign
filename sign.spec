@@ -1,5 +1,5 @@
 Name:           sign
-Version:        0.4
+Version:        0.5
 Release:        1%{?_rel}
 Summary:        Dev signing tools
 BuildArch:      noarch
@@ -48,6 +48,8 @@ rm -rf $RPM_BUILD_ROOT
 %license LICENSE.txt
 
 %changelog
+* Tue Mar 17 2026 Eric Snowberg <eric.snowberg@oracle.com> - 0.5
+- Fall back to an interactive MokManager password when root has no usable password hash
 * Thu Dec 12 2024 Eric Snowberg <eric.snowberg@oracle.com> - 0.4
 - Fix init-setup problem that originated from shellcheck change
 * Tue Nov 26 2024 Eric Snowberg <eric.snowberg@oracle.com> - 0.3

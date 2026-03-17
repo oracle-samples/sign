@@ -32,6 +32,44 @@ SIGN_CONF="/etc/sign/sign.conf"
 SIGN_CONF_LOCAL="/etc/sign/local.conf"
 RANDOM_NUMBER=$((RANDOM % 90000000 + 10000000))
 
+get_root_password_hash() {
+	local shadow_entry
+	local root_hash
+
+	if ! shadow_entry=$(getent shadow root 2>/dev/null); then
+		echo "Unable to inspect root password state; run sign as root" 1>&2
+		exit 1
+	fi
+
+	IFS=':' read -r _ root_hash _ <<< "$shadow_entry"
+	printf '%s\n' "$root_hash"
+}
+
+has_usable_root_password_hash() {
+	local root_hash
+
+	root_hash=$(get_root_password_hash)
+	case "$root_hash" in
+		''|'!'|'!!'|'*'|!*)
+			return 1
+			;;
+		esac
+
+	return 0
+}
+
+run_mokutil_request() {
+	local request_type=$1
+	shift
+
+	if has_usable_root_password_hash; then
+		mokutil "$request_type" "$@" --root-pw
+	else
+		echo "Root password is not set; MokManager password will be requested interactively" 1>&2
+		mokutil "$request_type" "$@"
+	fi
+}
+
 if [[ -s $SIGN_CONF ]]; then
 	# shellcheck source=./sign.conf
 	. "$SIGN_CONF"
@@ -122,9 +160,9 @@ init-setup() {
 
 	init-ima
 
-	mokutil --import "$MOK_MODULE_CERT" "$MOK_KERNEL_CERT" "$MOK_CA_CERT" "$TEST_CERT" --root-pw
+	run_mokutil_request --import "$MOK_MODULE_CERT" "$MOK_KERNEL_CERT" "$MOK_CA_CERT" "$TEST_CERT"
 	echo "****************************************************************************"
-	echo "* REBOOT MACHINE AND ENROLL NEW MOK KEYS (use root password in mokmanager) *"
+	echo "* REBOOT MACHINE AND ENROLL NEW MOK KEYS IN MOKMANAGER                     *"
 	echo "****************************************************************************"
 }
 
@@ -149,7 +187,7 @@ destroy-setup() {
 	certutil -d "$NSSDIR" -D -n $X509_DB_NICKNAME
 	certutil -d "$NSSDIR" -D -n $X509_KEK_NICKNAME
 	certutil -d "$NSSDIR" -D -n $X509_PK_NICKNAME
-	mokutil --delete "$MOK_CA_CERT" "$MOK_KERNEL_CERT" "$MOK_MODULE_CERT" "$TEST_CERT" --root-pw
+	run_mokutil_request --delete "$MOK_CA_CERT" "$MOK_KERNEL_CERT" "$MOK_MODULE_CERT" "$TEST_CERT"
 	rm -f "$MOK_KERNEL_CERT"
 	rm -f "$MOK_MODULE_CERT"
 	rm -f "$IMA_CERT"
@@ -159,7 +197,7 @@ destroy-setup() {
 	rm -f "$MOK_CA_CERT"
 	rm -f "$TEST_CERT"
 	echo "***************************************************************************"
-	echo "* REBOOT MACHINE NOW TO DELETE MOK KEYS (use root password in mokmanager) *"
+	echo "* REBOOT MACHINE NOW TO DELETE MOK KEYS IN MOKMANAGER                     *"
 	echo "***************************************************************************"
 }
 
@@ -243,9 +281,9 @@ restore() {
 	pk12util -i "$PK_KEY" -n $X509_PK_NICKNAME -d "$NSSDIR" -W "$password"
 	pk12util -i "$IMA_CA_KEY" -n $X509_IMA_NICKNAME -d "$NSSDIR" -W "$password"
 	rm -f "$MOK_KERNEL_KEY" "$MOK_MODULE_KEY" "$DB_KEY" "$KEK_KEY" "$PK_KEY" "$IMA_CA_KEY"
-	mokutil --import "$MOK_MODULE_CERT" "$MOK_KERNEL_CERT" "$MOK_CA_CERT" "$TEST_CERT" --root-pw
+	run_mokutil_request --import "$MOK_MODULE_CERT" "$MOK_KERNEL_CERT" "$MOK_CA_CERT" "$TEST_CERT"
 	echo "****************************************************************************"
-	echo "* REBOOT MACHINE AND ENROLL NEW MOK KEYS (use root password in mokmanager) *"
+	echo "* REBOOT MACHINE AND ENROLL NEW MOK KEYS IN MOKMANAGER                     *"
 	echo "****************************************************************************"
 }
 
